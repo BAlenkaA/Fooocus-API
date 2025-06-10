@@ -51,7 +51,7 @@ def get_task_type(req: Text2ImgRequest) -> TaskType:
     return TaskType.text_2_img
 
 
-def call_worker(req: Text2ImgRequest, accept: str) -> Response | AsyncJobResponse | List[GeneratedImageResult]:
+def call_worker(req: Text2ImgRequest, accept: str, upload_to_s3: bool = False) -> Response | AsyncJobResponse | List[GeneratedImageResult]:
     """call generation worker"""
     if accept == 'image/png':
         streaming_output = True
@@ -100,7 +100,7 @@ def call_worker(req: Text2ImgRequest, accept: str) -> Response | AsyncJobRespons
 
     if streaming_output:
         return generate_streaming_output(results)
-    return generate_image_result_output(results, req.require_base64)
+    return generate_image_result_output(results, req.require_base64, upload_to_s3=upload_to_s3)
 
 
 async def generate_mask(request: GenerateMaskRequest):

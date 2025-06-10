@@ -14,10 +14,14 @@ import shutil
 from io import BytesIO
 import os
 from pathlib import Path
+
+import boto3
 import numpy as np
 from PIL import Image
+from botocore.exceptions import NoCredentialsError, ClientError
 
 from fooocusapi.utils.logger import logger
+from fooocusapi.configs.config import infra_settings
 
 
 output_dir = os.path.abspath(os.path.join(
@@ -73,7 +77,31 @@ def delete_output_file(filename: str):
         return False
 
 
-def output_file_to_base64img(filename: str | None) -> str | None:
+def upload_to_minio(file_buffer: BytesIO, bucket_name: str, s3_key: str, content_type: str) -> str:
+    """
+    Загружает файл из памяти (BytesIO) в MinIO и возвращает URL.
+    """
+    s3_client = boto3.client(
+        's3',
+        endpoint_url='http://127.0.0.1:9001',
+        aws_access_key_id=infra_settings.MINIO_ACCESS_KEY,
+        aws_secret_access_key=infra_settings.MINIO_SECRET_KEY,
+    )
+
+    try:
+        s3_client.upload_fileobj(
+            file_buffer,
+            bucket_name,
+            s3_key,
+            ExtraArgs={'ContentType': content_type}
+        )
+        return f"https://{bucket_name}.minio.example.com/{s3_key}"
+    except (NoCredentialsError, ClientError) as e:
+        print(f"Ошибка при загрузке в MinIO: {e}")
+        raise
+
+
+def output_file_to_base64img(filename: str | None, upload_to_s3: bool = False, bucket_name: str = "fooocus") -> str | None:
     """
     Convert an image file to a base64 string.
     Args:
@@ -89,12 +117,22 @@ def output_file_to_base64img(filename: str | None) -> str | None:
     ext = filename.split('.')[-1]
     if ext.lower() not in ['png', 'jpg', 'webp', 'jpeg']:
         ext = 'png'
-    img = Image.open(file_path)
-    output_buffer = BytesIO()
-    img.save(output_buffer, format=ext.upper())
-    byte_data = output_buffer.getvalue()
-    base64_str = base64.b64encode(byte_data).decode('utf-8')
-    return f"data:image/{ext};base64," + base64_str
+
+    try:
+        img = Image.open(file_path)
+        output_buffer = BytesIO()
+        img.save(output_buffer, format=ext.upper())
+        if upload_to_s3:
+            current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+            base_name = os.path.splitext(filename)[0]
+            s3_key = f"{current_date}/{base_name}.{ext}"
+            content_type = f"image/{ext}"
+            return upload_to_minio(output_buffer, bucket_name, s3_key, content_type)
+        byte_data = output_buffer.getvalue()
+        base64_str = base64.b64encode(byte_data).decode('utf-8')
+        return f"data:image/{ext};base64," + base64_str
+    except Exception as e:
+        return None
 
 
 def output_file_to_bytesimg(filename: str | None) -> bytes | None:

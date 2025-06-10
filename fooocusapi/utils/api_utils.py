@@ -329,7 +329,9 @@ def generate_streaming_output(results: List[ImageGenerationResult]) -> Response:
 
 def generate_image_result_output(
         results: List[ImageGenerationResult],
-        require_base64: bool) -> List[GeneratedImageResult]:
+        require_base64: bool,
+        upload_to_s3: bool = False
+) -> List[GeneratedImageResult]:
     """
     Generate image result output
     Arguments:
@@ -338,12 +340,21 @@ def generate_image_result_output(
     Returns:
         List[GeneratedImageResult]
     """
-    results = [
-        GeneratedImageResult(
-            base64=output_file_to_base64img(item.im) if require_base64 else None,
-            url=get_file_serve_url(item.im),
-            seed=str(item.seed),
-            finish_reason=item.finish_reason
-            ) for item in results
-        ]
-    return results
+    processed_results = []
+    for item in results:
+        file_result = output_file_to_base64img(item.im, upload_to_s3=upload_to_s3)
+        if upload_to_s3:
+            base64_value = None
+            url_value = file_result
+        else:
+            base64_value = file_result if require_base64 else None
+            url_value = get_file_serve_url(item.im)
+        processed_results.append(
+            GeneratedImageResult(
+                base64=base64_value,
+                url=url_value,
+                seed=str(item.seed),
+                finish_reason=item.finish_reason
+            )
+        )
+    return processed_results

@@ -3,7 +3,7 @@
 """ Entry for Fooocus API.
 
 Use for starting Fooocus API.
-    python main.py --help for more usage
+    python main.py --preset cartoon --always-cpu 4 --all-in-fp32 --vae-in-cpu --disable-xformers --attention-pytorch --always-offload-from-vram
 
 @file: main.py
 @author: Konie

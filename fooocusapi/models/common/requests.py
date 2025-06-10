@@ -133,3 +133,7 @@ def advanced_params_parser(advanced_params: str | None) -> AdvancedParams:
         except ValidationError:
             return AdvancedParams()
     return AdvancedParams()
+
+
+class SaveToS3Request(BaseModel):
+    base64: str

@@ -15,7 +15,7 @@ from fooocusapi.models.requests_v2 import (
 )
 from fooocusapi.models.common.response import (
     AsyncJobResponse,
-    GeneratedImageResult
+    GeneratedImageResult, SaveToS3Response
 )
 from fooocusapi.utils.call_worker import (
     call_worker,
@@ -166,7 +166,8 @@ def img_prompt(
     accept: str = Header(None),
     accept_query: str | None = Query(
         None, alias='accept',
-        description="Parameter to override 'Accept' header, 'image/png' for output bytes")):
+        description="Parameter to override 'Accept' header, 'image/png' for output bytes"),
+    upload_to_s3: bool = False):
     """\nImage prompt\n
     Image prompt generation
     Arguments:
@@ -200,7 +201,7 @@ def img_prompt(
 
     req.image_prompts = image_prompts_files
 
-    return call_worker(req, accept)
+    return call_worker(req, accept, upload_to_s3=upload_to_s3)
 
 
 @secure_router.post(
