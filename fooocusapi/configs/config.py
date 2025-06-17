@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from typing import Optional
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -9,10 +10,8 @@ ENV_FILE_PATH = os.path.join(BASE_DIR, "configs", ".env")
 
 
 class InfraSettings(BaseSettings):
-    MINIO_ROOT_USER: str
-    MINIO_ROOT_PASSWORD: str
-    MINIO_ACCESS_KEY: str
-    MINIO_SECRET_KEY: str
+    MINIO_ACCESS_KEY: Optional[str] = None
+    MINIO_SECRET_KEY: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,
