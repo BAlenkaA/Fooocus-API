@@ -83,7 +83,7 @@ def upload_to_minio(file_buffer: BytesIO, bucket_name: str, s3_key: str, content
     """
     s3_client = boto3.client(
         's3',
-        endpoint_url='http://127.0.0.1:9001',
+        endpoint_url=infra_settings.URL_S3,
         aws_access_key_id=infra_settings.MINIO_ACCESS_KEY,
         aws_secret_access_key=infra_settings.MINIO_SECRET_KEY,
     )
@@ -95,9 +95,9 @@ def upload_to_minio(file_buffer: BytesIO, bucket_name: str, s3_key: str, content
             s3_key,
             ExtraArgs={'ContentType': content_type}
         )
-        return f"http://127.0.0.1:9001/{s3_key}"
+        return f"{infra_settings.URL_S3}/{s3_key}"
     except (NoCredentialsError, ClientError) as e:
-        print(f"Ошибка при загрузке в MinIO: {e}")
+        logger.std_error(f"Ошибка при загрузке в MinIO: {e}")
         raise
 
 
@@ -134,6 +134,7 @@ def output_file_to_base64img(filename: str | None, upload_to_s3: bool = False, b
             base64_str = base64.b64encode(byte_data).decode('utf-8')
             return f"data:image/{ext};base64," + base64_str
     except Exception as e:
+        logger.std_error(f"[ERROR] Произошла ошибка: {str(e)}")
         return None
 
 
