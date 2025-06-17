@@ -126,7 +126,7 @@ def output_file_to_base64img(filename: str | None, upload_to_s3: bool = False, b
             output_buffer.seek(0)
             current_date = datetime.datetime.now().strftime("%Y-%m-%d")
             base_name = filename.split('/')[-1]
-            s3_key = f"{current_date}/{base_name}.{ext}"
+            s3_key = f"{current_date}/{base_name}"
             content_type = f"image/{ext}"
             return upload_to_minio(output_buffer, bucket_name, s3_key, content_type)
         else:
