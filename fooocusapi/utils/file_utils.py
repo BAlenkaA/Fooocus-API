@@ -95,7 +95,7 @@ def upload_to_minio(file_buffer: BytesIO, bucket_name: str, s3_key: str, content
             s3_key,
             ExtraArgs={'ContentType': content_type}
         )
-        return f"https://{bucket_name}.minio.example.com/{s3_key}"
+        return f"http://127.0.0.1:9001/{s3_key}"
     except (NoCredentialsError, ClientError) as e:
         print(f"Ошибка при загрузке в MinIO: {e}")
         raise
@@ -123,14 +123,16 @@ def output_file_to_base64img(filename: str | None, upload_to_s3: bool = False, b
         output_buffer = BytesIO()
         img.save(output_buffer, format=ext.upper())
         if upload_to_s3:
+            output_buffer.seek(0)
             current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-            base_name = os.path.splitext(filename)[0]
+            base_name = filename.split('/')[-1]
             s3_key = f"{current_date}/{base_name}.{ext}"
             content_type = f"image/{ext}"
             return upload_to_minio(output_buffer, bucket_name, s3_key, content_type)
-        byte_data = output_buffer.getvalue()
-        base64_str = base64.b64encode(byte_data).decode('utf-8')
-        return f"data:image/{ext};base64," + base64_str
+        else:
+            byte_data = output_buffer.getvalue()
+            base64_str = base64.b64encode(byte_data).decode('utf-8')
+            return f"data:image/{ext};base64," + base64_str
     except Exception as e:
         return None
 
