@@ -77,9 +77,9 @@ def delete_output_file(filename: str):
         return False
 
 
-def upload_to_minio(file_buffer: BytesIO, bucket_name: str, s3_key: str, content_type: str) -> str:
+def upload_to_minio(filename: str) -> str:
     """
-    Загружает файл из памяти (BytesIO) в MinIO и возвращает URL.
+    Uploads the file to MinIO and returns the URL.
     """
     s3_client = boto3.client(
         's3',
@@ -87,21 +87,24 @@ def upload_to_minio(file_buffer: BytesIO, bucket_name: str, s3_key: str, content
         aws_access_key_id=infra_settings.MINIO_ACCESS_KEY,
         aws_secret_access_key=infra_settings.MINIO_SECRET_KEY,
     )
-
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    base_name = filename.split('/')[-1]
+    s3_key = f"{current_date}/{base_name}"
+    file_path = os.path.join(output_dir, filename)
     try:
-        s3_client.upload_fileobj(
-            file_buffer,
-            bucket_name,
-            s3_key,
-            ExtraArgs={'ContentType': content_type}
+        s3_client.upload_file(
+            Filename=file_path,
+            Bucket=infra_settings.BUCKET_NAME,
+            Key=s3_key,
         )
+        logger.std_info(f'File {filename} has been successfully uploaded to MinIO')
         return f"{infra_settings.URL_S3}/{s3_key}"
     except (NoCredentialsError, ClientError) as e:
-        logger.std_error(f"Ошибка при загрузке в MinIO: {e}")
+        logger.std_error(f"Error when uploading to MinIO: {e}")
         raise
 
 
-def output_file_to_base64img(filename: str | None, upload_to_s3: bool = False, bucket_name: str = "fooocus") -> str | None:
+def output_file_to_base64img(filename: str | None) -> str | None:
     """
     Convert an image file to a base64 string.
     Args:
@@ -117,25 +120,12 @@ def output_file_to_base64img(filename: str | None, upload_to_s3: bool = False, b
     ext = filename.split('.')[-1]
     if ext.lower() not in ['png', 'jpg', 'webp', 'jpeg']:
         ext = 'png'
-
-    try:
-        img = Image.open(file_path)
-        output_buffer = BytesIO()
-        img.save(output_buffer, format=ext.upper())
-        if upload_to_s3:
-            output_buffer.seek(0)
-            current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-            base_name = filename.split('/')[-1]
-            s3_key = f"{current_date}/{base_name}"
-            content_type = f"image/{ext}"
-            return upload_to_minio(output_buffer, bucket_name, s3_key, content_type)
-        else:
-            byte_data = output_buffer.getvalue()
-            base64_str = base64.b64encode(byte_data).decode('utf-8')
-            return f"data:image/{ext};base64," + base64_str
-    except Exception as e:
-        logger.std_error(f"[ERROR] Произошла ошибка: {str(e)}")
-        return None
+    img = Image.open(file_path)
+    output_buffer = BytesIO()
+    img.save(output_buffer, format=ext.upper())
+    byte_data = output_buffer.getvalue()
+    base64_str = base64.b64encode(byte_data).decode('utf-8')
+    return f"data:image/{ext};base64," + base64_str
 
 
 def output_file_to_bytesimg(filename: str | None) -> bytes | None:

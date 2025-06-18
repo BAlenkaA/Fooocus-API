@@ -13,6 +13,7 @@ class InfraSettings(BaseSettings):
     MINIO_ACCESS_KEY: Optional[str] = None
     MINIO_SECRET_KEY: Optional[str] = None
     URL_S3: Optional[str] = None
+    BUCKET_NAME: Optional[str] = None
 
     model_config = SettingsConfigDict(
         env_file=ENV_FILE_PATH,

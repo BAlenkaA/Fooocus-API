@@ -17,7 +17,7 @@ from fooocusapi.utils.img_utils import read_input_image
 from fooocusapi.utils.file_utils import (
     get_file_serve_url,
     output_file_to_base64img,
-    output_file_to_bytesimg
+    output_file_to_bytesimg, upload_to_minio
 )
 from fooocusapi.utils.logger import logger
 from fooocusapi.models.common.requests import (
@@ -337,17 +337,17 @@ def generate_image_result_output(
     Arguments:
         results: List[ImageGenerationResult]
         require_base64: bool
+        upload_to_s3: bool
     Returns:
         List[GeneratedImageResult]
     """
     processed_results = []
     for item in results:
-        file_result = output_file_to_base64img(item.im, upload_to_s3=upload_to_s3)
         if upload_to_s3:
             base64_value = None
-            url_value = file_result
+            url_value = upload_to_minio(filename=item.im)
         else:
-            base64_value = file_result if require_base64 else None
+            base64_value = output_file_to_base64img(item.im) if require_base64 else None,
             url_value = get_file_serve_url(item.im)
         processed_results.append(
             GeneratedImageResult(
