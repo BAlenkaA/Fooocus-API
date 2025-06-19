@@ -257,6 +257,7 @@ class TaskQueue:
                     if task.upload_to_s3 and image_path:
                         try:
                             image_url = upload_to_minio(image_path)
+                            delete_output_file(image_path)
                         except Exception as e:
                             logger.std_error(f"[S3] Upload failed: {e}")
                             image_url = get_file_serve_url(image_path)
