@@ -13,7 +13,7 @@ from typing import List, Tuple
 import numpy as np
 import requests
 
-from fooocusapi.utils.file_utils import delete_output_file, get_file_serve_url
+from fooocusapi.utils.file_utils import delete_output_file, get_file_serve_url, upload_to_minio
 from fooocusapi.utils.img_utils import narray_to_base64img
 from fooocusapi.utils.logger import logger
 
@@ -40,6 +40,7 @@ class QueueTask:
         task_result (List[ImageGenerationResult]): The result of the task.
         error_message (str): The error message, if any.
         webhook_url (str): The webhook URL, if any.
+        upload_to_s3 (bool): Save indication on S3.
     """
 
     job_id: str
@@ -56,6 +57,7 @@ class QueueTask:
     task_result: List[ImageGenerationResult] = None
     error_message: str | None = None
     webhook_url: str | None = None  # attribute for individual webhook_url
+    upload_to_s3: bool = False
 
     def __init__(
         self,
@@ -63,12 +65,14 @@ class QueueTask:
         task_type: TaskType,
         req_param: ImageGenerationParams,
         webhook_url: str | None = None,
+        upload_to_s3: bool = False
     ):
         self.job_id = job_id
         self.task_type = task_type
         self.req_param = req_param
         self.in_queue_mills = int(round(time.time() * 1000))
         self.webhook_url = webhook_url
+        self.upload_to_s3 = upload_to_s3
 
     def set_progress(self, progress: int, status: str | None):
         """
@@ -153,12 +157,14 @@ class TaskQueue:
         task_type: TaskType,
         req_param: ImageGenerationParams,
         webhook_url: str | None = None,
+        upload_to_s3: bool = False
     ) -> QueueTask | None:
         """
         Create and add task to queue
         :param task_type: task type
         :param req_param: request parameters
         :param webhook_url: webhook url
+        :param upload_to_s3: whether to save the generated image on S3
         :returns: The created task's job_id, or None if reach the queue size limit
         """
         if len(self.queue) >= self.queue_size:
@@ -173,6 +179,7 @@ class TaskQueue:
             task_type=task_type,
             req_param=req_param,
             webhook_url=webhook_url,
+            upload_to_s3=upload_to_s3
         )
         self.queue.append(task)
         self.last_job_id = job_id
@@ -246,9 +253,18 @@ class TaskQueue:
 
             if isinstance(task.task_result, List):
                 for item in task.task_result:
+                    image_path = item.im
+                    if task.upload_to_s3 and image_path:
+                        try:
+                            image_url = upload_to_minio(image_path)
+                        except Exception as e:
+                            logger.std_error(f"[S3] Upload failed: {e}")
+                            image_url = get_file_serve_url(image_path)
+                    else:
+                        image_url = get_file_serve_url(image_path) if image_path else None
                     data["job_result"].append(
                         {
-                            "url": get_file_serve_url(item.im) if item.im else None,
+                            "url": image_url,
                             "seed": item.seed if item.seed else "-1",
                         }
                     )

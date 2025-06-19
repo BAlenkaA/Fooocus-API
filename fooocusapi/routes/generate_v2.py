@@ -167,7 +167,7 @@ def img_prompt(
     accept_query: str | None = Query(
         None, alias='accept',
         description="Parameter to override 'Accept' header, 'image/png' for output bytes"),
-    upload_to_s3: bool = False):
+):
     """\nImage prompt\n
     Image prompt generation
     Arguments:
@@ -201,7 +201,7 @@ def img_prompt(
 
     req.image_prompts = image_prompts_files
 
-    return call_worker(req, accept, upload_to_s3=upload_to_s3)
+    return call_worker(req, accept)
 
 
 @secure_router.post(

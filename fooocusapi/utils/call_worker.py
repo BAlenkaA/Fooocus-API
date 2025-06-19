@@ -51,7 +51,7 @@ def get_task_type(req: Text2ImgRequest) -> TaskType:
     return TaskType.text_2_img
 
 
-def call_worker(req: Text2ImgRequest, accept: str, upload_to_s3: bool = False) -> Response | AsyncJobResponse | List[GeneratedImageResult]:
+def call_worker(req: Text2ImgRequest, accept: str) -> Response | AsyncJobResponse | List[GeneratedImageResult]:
     """call generation worker"""
     if accept == 'image/png':
         streaming_output = True
@@ -62,7 +62,7 @@ def call_worker(req: Text2ImgRequest, accept: str, upload_to_s3: bool = False) -
 
     task_type = get_task_type(req)
     params = req_to_params(req)
-    async_task = worker_queue.add_task(task_type, params, req.webhook_url)
+    async_task = worker_queue.add_task(task_type, params, req.webhook_url, req.upload_to_s3)
 
     if async_task is None:
         # add to worker queue failed
@@ -100,7 +100,7 @@ def call_worker(req: Text2ImgRequest, accept: str, upload_to_s3: bool = False) -
 
     if streaming_output:
         return generate_streaming_output(results)
-    return generate_image_result_output(results, req.require_base64, upload_to_s3=upload_to_s3)
+    return generate_image_result_output(results, req.require_base64, upload_to_s3=req.upload_to_s3)
 
 
 async def generate_mask(request: GenerateMaskRequest):
