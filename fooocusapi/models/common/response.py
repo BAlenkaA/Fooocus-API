@@ -91,10 +91,3 @@ class AllModelNamesResponse(BaseModel):
 class StopResponse(BaseModel):
     """stop task response"""
     msg: str
-
-
-class SaveToS3Response(BaseModel):
-    url: str
-    key: str
-    bucket: str
-

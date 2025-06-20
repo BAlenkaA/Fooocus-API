@@ -2,7 +2,7 @@
 
 """
 from typing import List
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Header, Query, HTTPException
 
 from fooocusapi.models.common.base import EnhanceCtrlNets, GenerateMaskRequest
 from fooocusapi.utils.api_utils import api_key_auth
@@ -15,7 +15,7 @@ from fooocusapi.models.requests_v2 import (
 )
 from fooocusapi.models.common.response import (
     AsyncJobResponse,
-    GeneratedImageResult, SaveToS3Response
+    GeneratedImageResult,
 )
 from fooocusapi.utils.call_worker import (
     call_worker,
@@ -177,6 +177,19 @@ def img_prompt(
     Returns:
         Response -- img_generate_responses
     """
+    if req.upload_to_s3:
+        from fooocusapi.configs.config import infra_settings
+        required_vars = [
+            infra_settings.URL_S3,
+            infra_settings.MINIO_ACCESS_KEY,
+            infra_settings.MINIO_SECRET_KEY,
+            infra_settings.BUCKET_NAME
+        ]
+        if not all(required_vars):
+            raise HTTPException(
+                status_code=400,
+                detail="Missing required infrastructure settings for upload to S3."
+            )
     if accept_query is not None and len(accept_query) > 0:
         accept = accept_query
 
