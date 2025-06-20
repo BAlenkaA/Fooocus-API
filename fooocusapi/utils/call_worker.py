@@ -100,7 +100,7 @@ def call_worker(req: Text2ImgRequest, accept: str) -> Response | AsyncJobRespons
 
     if streaming_output:
         return generate_streaming_output(results)
-    return generate_image_result_output(results, req.require_base64, upload_to_s3=req.upload_to_s3)
+    return generate_image_result_output(results, req.require_base64)
 
 
 async def generate_mask(request: GenerateMaskRequest):

@@ -158,3 +158,12 @@ def get_file_serve_url(filename: str | None) -> str | None:
     if filename is None:
         return None
     return STATIC_SERVER_BASE + '/'.join(filename.split('/')[-2:])
+
+
+def get_file_s3_url(filename: str | None) -> str | None:
+    if filename is None:
+        return None
+    current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+    base_name = filename.split('/')[-1]
+    s3_key = f"{current_date}/{base_name}"
+    return f"{infra_settings.URL_S3}/{s3_key}"
