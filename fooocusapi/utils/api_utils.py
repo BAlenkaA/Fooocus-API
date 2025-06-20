@@ -292,7 +292,7 @@ def generate_async_output(
             job_stage = AsyncJobStage.error
         elif task.task_result is not None:
             job_stage = AsyncJobStage.success
-            job_result = generate_image_result_output(task.task_result, task.req_param.require_base64)
+            job_result = generate_image_result_output(task.task_result, task.req_param.require_base64, task.upload_to_s3)
 
     result = AsyncJobResponse(
         job_id=task.job_id,
